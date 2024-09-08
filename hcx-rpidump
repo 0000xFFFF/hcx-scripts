@@ -11,6 +11,11 @@ dump_dir = "/home/pi/dump"
 if not os.path.exists(dump_dir): os.makedirs(dump_dir)
 os.chdir(dump_dir)
 
+bpf = os.path.join(os.path.dirname(os.path.realpath(__file__)), "hcx-menu-rpi-filter.bpf")
+useBPF = True
+if os.stat(bpf).st_size == 0:
+    useBPF = False
+
 def checkRoot():
     return os.geteuid() == 0
 
@@ -42,10 +47,12 @@ def run():
         print("can't start, no valid adapter")
         return
 
-    bpf = os.path.join(os.path.dirname(os.path.realpath(__file__)), "hcx-menu-rpi-filter.bpf")
     print(f"bpf: {bpf}")
     print("starting...")
-    arg_list = ['sudo', 'hcxdumptool', '-i', interface, f"--bpf={bpf}"]
+    arg_list = ['sudo', 'hcxdumptool', '-i', interface]
+    if useBPF:
+        arg_list += [f"--bpf={bpf}"]
+
     process = subprocess.Popen(arg_list, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
     output, _ = process.communicate()
     print("died")
