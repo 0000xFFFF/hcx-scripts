@@ -36,6 +36,7 @@ KEY3_PIN      = 16
 
 interface = "wlan1"
 dump_dir = "/home/pi/dump"
+if not os.path.exists(dump_dir): os.makedirs(dump_dir)
 os.chdir(dump_dir)
 hash_file = "preview.txt"
 

@@ -8,8 +8,8 @@ import sys
 
 interface = "wlan1"
 dump_dir = "/home/pi/dump"
+if not os.path.exists(dump_dir): os.makedirs(dump_dir)
 os.chdir(dump_dir)
-hash_file = "preview.txt"
 
 def checkRoot():
     return os.geteuid() == 0
@@ -26,9 +26,6 @@ def get_adapters():
         ifs.append(intface)
     return ifs
 
-def isRunning():
-    return "hcxdumptool" in (p.name() for p in psutil.process_iter())
-
 def noAdapter():
     ifs = get_adapters()
     for i in ifs:
@@ -36,14 +33,11 @@ def noAdapter():
             return False
     return True
 
-def start_command(arg_list):
-    process = subprocess.Popen(arg_list, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-    output, _ = process.communicate()
-
-def action_start():
-    if isRunning():
+def run():
+    if "hcxdumptool" in (p.name() for p in psutil.process_iter()):
         print("can't start, already running")
         return
+
     if noAdapter():
         print("can't start, no valid adapter")
         return
@@ -51,9 +45,11 @@ def action_start():
     bpf = os.path.join(os.path.dirname(os.path.realpath(__file__)), "hcx-menu-rpi-filter.bpf")
     print(f"bpf: {bpf}")
     print("starting...")
-    start_command(['sudo', 'hcxdumptool', '-i', interface, f"--bpf={bpf}"])
+    arg_list = ['sudo', 'hcxdumptool', '-i', interface, f"--bpf={bpf}"]
+    process = subprocess.Popen(arg_list, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+    output, _ = process.communicate()
     print("started.")
 
 while True:
-    action_start()
+    run()
     time.sleep(2)

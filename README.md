@@ -44,9 +44,9 @@ hcx-potfile            - display a nice table for all hashcat passwords in potfi
 
 # Capturing hashes with raspberry pi and hcxdumptool
 ```
-hcx-start    - small script that starts hcxdumptool when wlan1
-               device is connected to raspberry pi
-hcx-menu-rpi - rasberry pi waveshare menu for starting hcxdumptool
+hcx-rpidump       - small script that starts hcxdumptool when wlan1
+                    device is connected to raspberry pi
+hcx-rpidump-wmenu - rasberry pi waveshare menu for starting hcxdumptool
 ```
 
 # Generate password wordlists for cracking:

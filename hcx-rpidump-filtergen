@@ -1,0 +1,3 @@
+#!/bin/bash
+hcxdumptool --bpfc="not ether host $1" > hcx-rpidump-filter.bpf
+
