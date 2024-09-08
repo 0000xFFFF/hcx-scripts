@@ -53,6 +53,7 @@ def run():
         print(f"using bpf: {bpf}")
         arg_list += [f"--bpf={bpf}"]
 
+    print(arg_list)
     process = subprocess.Popen(arg_list, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
     output, _ = process.communicate()
     print("died")
