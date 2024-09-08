@@ -11,12 +11,12 @@ sudo ln -sfr hcx-genlst-num8 /usr/local/bin/.
 sudo ln -sfr hcx-genlst-numcommon /usr/local/bin/.
 sudo ln -sfr hcx-genlst-upper8 /usr/local/bin/.
 sudo ln -sfr hcx-info /usr/local/bin/.
-sudo ln -sfr hcx-menu-rpi /usr/local/bin/.
 sudo ln -sfr hcx-names /usr/local/bin/.
 sudo ln -sfr hcx-new /usr/local/bin/.
 sudo ln -sfr hcx-potfile /usr/local/bin/.
+sudo ln -sfr hcx-rpidump /usr/local/bin/.
+sudo ln -sfr hcx-rpidump-wmenu /usr/local/bin/.
 sudo ln -sfr hcx-rmhashes /usr/local/bin/.
-sudo ln -sfr hcx-start /usr/local/bin/.
 sudo ln -sfr hcx-status /usr/local/bin/.
 sudo ln -sfr hcx-uniq /usr/local/bin/.
 sudo ln -sfr hcx-wifi /usr/local/bin/.
