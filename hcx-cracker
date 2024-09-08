@@ -205,7 +205,7 @@ part_2_end   = 24
 def write_shortlists(f_run):
     for i in range(part_1_start, part_1_end+1):
         session_part = f"part{i}"
-        line = f"hashcat -m 22000 \"{args.filename.name}\" -a 0 \"/home/user/.vip/lists/wlst/commonfirst/hgl_part{i}.txt\" -w 4 --session \"{session_part}\"\n"
+        line = f"hashcat -m --quiet 22000 \"{args.filename.name}\" -a 0 \"/home/user/.vip/lists/wlst/commonfirst/hgl_part{i}.txt\" -w 4 --session \"{session_part}\"\n"
         f_run.write(line)
         print(f"| {line}", end="")
 
@@ -213,7 +213,7 @@ def write_shortlists(f_run):
 def write_longlists(f_run):
     for i in range(part_1_end+1, part_2_end+1):
         session_part = f"part{i}"
-        line = f"hashcat -m 22000 \"{args.filename.name}\" -a 0 \"/home/user/.vip/lists/wlst/commonfirst/hgl_part{i}.txt\" -w 4 --session \"{session_part}\"\n"
+        line = f"hashcat --quiet -m 22000 \"{args.filename.name}\" -a 0 \"/home/user/.vip/lists/wlst/commonfirst/hgl_part{i}.txt\" -w 4 --session \"{session_part}\"\n"
         f_run.write(line)
         print(f"| {line}", end="")
 
