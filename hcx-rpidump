@@ -48,7 +48,7 @@ def run():
     arg_list = ['sudo', 'hcxdumptool', '-i', interface, f"--bpf={bpf}"]
     process = subprocess.Popen(arg_list, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
     output, _ = process.communicate()
-    print("started.")
+    print("died")
 
 while True:
     run()
