@@ -11,7 +11,8 @@ Useful python scripts for cracking/processing WPA-PBKDF2-PMKID+EAPOL hashes and 
 * hcxdumptool
 
 ## Requirements - pip
-hcx-wifi
+* colorama
+* tabulate
 * scapy
 * getkey
 

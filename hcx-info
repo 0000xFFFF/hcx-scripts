@@ -10,12 +10,11 @@ import argparse
 
 # Argument parsing
 parser = argparse.ArgumentParser(description='Print a table for WPA-PBKDF2-PMKID+EAPOL hashes in file')
-parser.add_argument('-s', '--sort', action='store_true', help="Sort output by column")
-parser.add_argument('-i', '--sortindex', metavar='clm_num', default=5, type=int, help="Column number to sort (starts with 0) (default: 5 - ESSID)")
-parser.add_argument('-v', '--vendor', action='store_true', help="Fetch vendor information for all MACs")
-parser.add_argument('-n', '--nohashcat', action='store_true', help="Don't fetch passwords from hashcat")
-parser.add_argument('-c', '--nocolor', action='store_true', help="Don't use colors when printing")
-parser.add_argument('-g', '--search', metavar='search_str', type=str, help="Search hash by (ESSID, BSSID, MAC, ...) and print line")
+parser.add_argument('-s', '--sort', metavar='clm_num', type=int, help="sort output by column")
+parser.add_argument('-v', '--vendor', action='store_true', help="fetch vendor information for all MACs")
+parser.add_argument('-n', '--nohashcat', action='store_true', help="dont't fetch passwords from hashcat")
+parser.add_argument('-c', '--nocolor', action='store_true', help="dont't use colors when printing")
+parser.add_argument('-g', '--search', metavar='search_str', type=str, help="search hash by (ESSID, BSSID, MAC, ...) and print line")
 parser.add_argument('filename', type=argparse.FileType('r'))
 args = parser.parse_args()
 
@@ -91,8 +90,7 @@ if args.search:
     quit()
 
 # Sorting
-if args.sort:
-    items = sorted(items, key=itemgetter(args.sortindex))
+if args.sort is not None: items = sorted(items, key=itemgetter(args.sort))
 
 # Color and print output
 data = []

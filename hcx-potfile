@@ -1,7 +1,5 @@
 #!/usr/bin/env python3
 
-#
-# USAGE:
 # hcx-potfile "/path/for/the/potfile (optional)"   - the script will find the potfile by itself
 # hcx-potfile PASS                                 - only print passwords from potfile
 # hcx-potfile SORT0                                - sort by clm index (0 = num, 1 = hashid, 2 = essid, 3 = psk)
@@ -14,49 +12,36 @@ import subprocess
 from colorama import Fore, Back, Style
 from tabulate import tabulate
 from operator import itemgetter
+import argparse
 
-print_pass_only = False
-sort_essid = False
-nocolor = False
-sort_index = 3
+# Argument parsing
+parser = argparse.ArgumentParser(description='Print a table for WPA-PBKDF2-PMKID+EAPOL hashes/passwords in hashcat potfile')
+parser.add_argument('-s', '--sort', metavar='clm_num', type=int, help="sort output by column")
+parser.add_argument('-p', '--passonly', action='store_true', help="only print passwords from potfile")
+parser.add_argument('-c', '--nocolor', action='store_true', help="dont't use colors when printing")
+parser.add_argument('-i', '--input', metavar='potfile', type=str, help="manually specify potfile path")
+args = parser.parse_args()
+
 potfile_path = os.path.expanduser('~') + "/.local/share/hashcat/hashcat.potfile"
-
-for i_ in sys.argv[1:]:
-    i = i_.lower()
-    if i == "nocolor":
-        nocolor = True
-    elif i == "pass":
-        print_pass_only = True
-    elif "sort" in i:
-        sort_essid = True
-        i_split = i.split("sort")
-        if len(i_split) >= 2 and i_split[1]:
-            sort_index = int(i_split[1])
-    else:
-        potfile_path = i
-
+if args.input: potfile_path = args.input
 
 def hex2str(string):
     try:
         hex_bytes = bytes.fromhex(string)
         utf8_string = hex_bytes.decode('utf-8')
         return utf8_string
-    except Exception as e: return "HEX ERROR"
+    except: return "HEX ERROR"
 
-potfile = open(potfile_path, 'r')
-potfile_lines = potfile.readlines()
-potfile.close()
+with open(potfile_path, 'r') as file:
+    potfile_lines = file.read().splitlines()
 
-if print_pass_only:
+if args.passonly:
     for i in potfile_lines:
         print(i.replace("\n", "").split(":")[1])
 else:
     psks = []
-    num = 0
-    for i in potfile_lines:
-        line = i.replace("\n", "")
+    for i, line in enumerate(potfile_lines):
         if not line: continue
-        num += 1
         split_star = line.split("*")
         if len(split_star) != 2: continue
         hash = split_star[0]
@@ -65,16 +50,15 @@ else:
         psk = split_colon[1]
         essid = hex2str(essid_hex)
 
-        if nocolor:
-            psks.append([str(num),hash,essid,psk])
+        if args.nocolor:
+            psks.append([str(i),hash,essid,psk])
         else:
-            clr_num   = Style.NORMAL + Fore.YELLOW + str(num) + Style.RESET_ALL
-            clr_hash  = Style.NORMAL + Fore.GREEN  + hash     + Style.RESET_ALL
-            clr_essid = Style.NORMAL + Fore.BLUE   + essid    + Style.RESET_ALL
-            clr_psk   = Style.NORMAL + Fore.RED    + psk      + Style.RESET_ALL
+            clr_num   = Style.NORMAL + Fore.YELLOW + str(i) + Style.RESET_ALL
+            clr_hash  = Style.NORMAL + Fore.GREEN  + hash   + Style.RESET_ALL
+            clr_essid = Style.NORMAL + Fore.BLUE   + essid  + Style.RESET_ALL
+            clr_psk   = Style.NORMAL + Fore.RED    + psk    + Style.RESET_ALL
             psks.append([clr_num,clr_hash,clr_essid,clr_psk])
 
-    if sort_essid:
-        psks = sorted(psks, key=itemgetter(sort_index))
+    if args.sort is not None: psks = sorted(psks, key=itemgetter(args.sort))
 
     print(tabulate(psks, headers=["#", "HASHCAT ID", "ESSID", "PASSWORD"]))
