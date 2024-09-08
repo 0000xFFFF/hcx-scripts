@@ -1,0 +1,97 @@
+#!/usr/bin/env python3
+
+import sys
+from scapy.all import *
+
+fetch_vendor = 1
+
+if fetch_vendor:
+    ouifile_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), "mac2ven.lst")
+
+    try:
+        ouifile = open(ouifile_path, 'r')
+        ouifile_lines = ouifile.readlines()
+        ouifile.close()
+    except FileNotFoundError: ouifile_lines = []
+
+    mac2ven_cache = [] # this makes if way faster
+    def mac2ven(mac):
+        if len(ouifile_lines) == 0: return ""
+        mac2check = mac.replace(":", "").replace("-", "").upper()[0:6]
+        for i in mac2ven_cache:
+            if mac2check == i[0]: return i[1]
+        for y_ in ouifile_lines:
+            y = y_.replace("\n", "")
+            split = y.split("\t")
+            split_l = len(split)
+            oui_mac = ""
+            oui_ven = ""
+            if split_l >= 1: oui_mac = split[0]
+            if split_l >= 2: oui_ven = split[1]
+            if mac2check == oui_mac:
+                mac2ven_cache.append([oui_mac, oui_ven])
+                return oui_ven
+        return ""
+else:
+    def mac2ven(mac):
+        return ""
+
+channels = [ 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11 ]
+
+def hopch(i):
+    os.system(f"sudo iw dev '{interface}' set channel {i}")
+
+running = True
+ch = 1
+
+
+def thread_hopch():
+    global ch
+    global running
+    while running:
+        for i in channels:
+            ch = i
+            hopch(i)
+            time.sleep(1)
+
+macs = []
+def macs_add(prepend, mac):
+    if not mac in macs:
+        print(prepend,mac,mac2ven(mac))
+        macs.append(mac)
+def callback_macs(packet):
+    prepend = " "
+    if packet.haslayer(Dot11Beacon): prepend = "B"
+    try:    addr1 = str(packet.addr1).upper()
+    except: addr1 = ""
+    try:    addr2 = str(packet.addr2).upper()
+    except: addr2 = ""
+    try:    addr3 = str(packet.addr3).upper()
+    except: addr4 = ""
+
+    macs_add(prepend,addr1)
+    macs_add(prepend,addr2)
+    macs_add(prepend,addr3)
+
+def is_root():
+    return os.geteuid() == 0
+
+if __name__ == "__main__":
+
+    argv_len = len(sys.argv)
+
+    if argv_len < 2:
+        print("ABOUT: uses scapy to show nearby macs")
+        print(f"USAGE: sudo {sys.argv[0]} <interface(mon)>")
+        exit()
+
+    if not is_root():
+        print("use root.")
+        exit()
+
+    interface = sys.argv[1]
+
+    th_hop = Thread(target=thread_hopch)
+    th_hop.start()
+
+    sniff(prn=callback_macs, iface=interface)

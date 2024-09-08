@@ -1,0 +1,10 @@
+#!/bin/bash
+
+# just print essids in hash file
+
+INPUT_FILE="$1"
+
+while read -r line ; do
+    printf "$line" | awk 'BEGIN { FS = "*" } ; { print $6 }' | perl -pe 's/(..)/chr(hex($1))/ge'
+done <<< $(cat "$INPUT_FILE")
+

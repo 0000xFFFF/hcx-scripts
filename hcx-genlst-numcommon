@@ -1,0 +1,94 @@
+#!/usr/bin/env python3
+
+import sys
+
+
+prefix = ""
+if len(sys.argv) >= 2:
+    prefix = sys.argv[1]
+
+# settings
+year_from = 1900
+year_to   = 2024
+
+# check for leap years
+leapStart = 2000
+def isLeap(year):
+    return (((year % 400 == 0) and (year % 100 == 0)) or ((year % 4 ==0) and (year % 100 != 0)))
+
+
+def max_month(i, year):
+    if i ==  1: return 31
+    if i ==  2: return (29 if isLeap(year) else 28)
+    if i ==  3: return 31
+    if i ==  4: return 30
+    if i ==  5: return 31
+    if i ==  6: return 30
+    if i ==  7: return 31
+    if i ==  8: return 31
+    if i ==  9: return 30
+    if i == 10: return 31
+    if i == 11: return 30
+    if i == 12: return 31
+
+yf = year_from
+yt = year_to+1
+
+common = [
+    "12345678",
+    "123456788",
+    "123456789",
+    "1234567890",
+    "1234567899",
+    "12345678910",
+    "01234567",
+    "012345678",
+    "0123456788",
+    "0123456789",
+    "012345678910",
+    "87654321",
+    "987654321",
+    "10987654321",
+    "11111112",
+    "1111122222",
+    "11223344",
+    "44332211",
+    "12348765",
+    "13572468",
+    "12344321",
+    "43211234",
+    "5432112345",
+    "1234554321",
+    "69696969",
+    "420420420",
+]
+
+
+def proc(s):
+    print(f"{prefix}{s}")
+
+for i in common:
+    proc(i)
+
+for x in range(0, 9+1):
+    xs = str(x) * 4
+    for y in range(0, 9+1):
+        ys = str(y) * 4
+        proc(f"{xs}{ys}")
+
+for x in range(yf, yt):
+    xs = str(x).rjust(4, '0')
+    for y in range(1, 12+1):
+        ys = str(y).rjust(2, '0')
+        for z in range(1, max_month(y, x)+1):
+            zs = str(z).rjust(2, '0')
+            proc(f"{zs}{ys}{xs}") # day + month + year
+            proc(f"{xs}{ys}{zs}") # year + month + day
+            proc(f"{ys}{zs}{xs}") # month + day + year
+            proc(f"{xs}{zs}{ys}") # year + day + month
+
+# year + year
+for x in range(yf, yt):
+    for y in range(yf, yt):
+        proc(f"{x}{y}")
+

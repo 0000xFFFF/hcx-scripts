@@ -1,0 +1,35 @@
+#!/bin/bash
+
+# ABOUT: extract all info from *.cap *.pcapng files with hcxdumptool
+
+echo "-- hcxpcapngtool"
+hcxpcapngtool *.pcapng *.cap -E essid.txt -R probeonly.txt -I identity.txt -U username.txt -D deviceinfo.txt -o all.txt >/dev/null 2>/dev/null
+echo "-- essid_uniq.txt"
+sort -u essid.txt > essid_uniq.txt
+echo "-- probeonly_uniq.txt"
+sort -u probeonly.txt > probeonly_uniq.txt
+echo "-- identity_uniq.txt"
+sort -u identity.txt > identity_uniq.txt
+echo "-- username_uniq.txt"
+sort -u username.txt > username_uniq.txt
+echo "-- deviceinfo_uniq.txt"
+sort -u deviceinfo.txt > deviceinfo_uniq.txt
+echo "-- all_uniq.txt"
+sort -u all.txt > all_uniq.txt
+echo "-- all_uniq_bssid.txt"
+hcx-uniq all_uniq.txt > apuniq.txt
+
+hashcat -m 22000 --show "all_uniq.txt" > hashcat_cracked.txt
+hashcat -m 22000 --left "all_uniq.txt" > hashcat_uncracked.txt
+
+hcx-uniq hashcat_uncracked.txt > left.txt
+hcx-rmhashes apuniq.txt left.txt > cracked.txt
+
+# set your txt file where you store all your hashes here
+MAINDB="/media/SSD/root/dump/cap/all/all.txt"
+if [ -f "$MAINDB" ]; then
+        hcx-rmhashes left.txt "$MAINDB" > new.txt
+fi
+
+# generate passlst for hcx-wifi
+hcx-wifi-genpasslst apuniq.txt > passlst.csv

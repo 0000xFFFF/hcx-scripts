@@ -1,0 +1,12 @@
+#!/usr/bin/env python3
+
+import itertools
+
+# Generate all permutations from 00000000 to 99999999
+def generate_permutations():
+    for perm in itertools.product('0123456789', repeat=8):
+        yield ''.join(perm)
+
+# Example usage
+for p in generate_permutations():
+    print(p)

@@ -1,0 +1,255 @@
+#!/usr/bin/env python3
+
+import sys
+import argparse
+import itertools
+import time
+from threading import Thread
+
+parser = argparse.ArgumentParser(description='generate password wordlist from strings (words)')
+
+parser.add_argument('-s', '--string', metavar='word', action="append", type=str, help="append word to word set for generation (can have multiple -s)")
+parser.add_argument('-i', '--input', metavar='infile', type=str, help="append every line in file to word set")
+parser.add_argument('-o', '--output', metavar='outfile', type=str, help="file to write to (default: stdout)")
+parser.add_argument('-v', '--verbose', action='store_true', help="print status")
+parser.add_argument('-l', '--lower', action='store_true', help="add lowercase word variation to word set")
+parser.add_argument('-u', '--upper', action='store_true', help="add UPPERCASE word variation to word set")
+parser.add_argument('-t', '--title', action='store_true', help="add Title word variation to word set")
+parser.add_argument('-r', '--reverse', action='store_true', help="reverse string")
+parser.add_argument("-1", '--wordint', action='store_true', help="word + int")
+parser.add_argument("-2", '--intword', action='store_true', help="int + word")
+parser.add_argument("-3", '--intwordint', action='store_true', help="int + word + int")
+parser.add_argument('-y', '--year', action='store_true', help="just generate [0](0-100) and years 1800-2025")
+parser.add_argument('-m', '--min', metavar='number', default=8, type=int, help="min password len (default: 8)")
+parser.add_argument('-c', '--check', action="store_true", help="check if output is unique, don't generate dupes, slower")
+parser.add_argument('-d', '--double', action="store_true", help="double mode -- permutate every word in word set len 2 (<str><str>)")
+parser.add_argument('-z', '--double_small', action='store_true', help="double mode -- just do (<str1><str1>)")
+parser.add_argument('-j', '--double_join', metavar='string', type=str, default="", help="double mode -- join string (<str><join><str>)")
+
+args = parser.parse_args()
+
+if args.verbose:
+    sys.stderr.write(f"{args}\n")
+
+    class Progress:
+        def __init__(self, current, total, length=25):
+            self.current = current
+            self.total = total
+            self.length = length
+            self.running = True  # Control flag for the thread
+
+            # Start the thread to display the progress
+            self.thread = Thread(target=self.run)
+            self.thread.start()
+
+        def run(self):
+            p = 0
+            while self.running:
+                a = self.current
+                self.display(a, p)
+                p = a
+                time.sleep(1)  # Update every second
+
+        def display(self, current, previous=0):
+            percent_complete = (current / self.total) * 100
+            filled_length = int(self.length * percent_complete // 100)
+            bar = '#' * filled_length + '-' * (self.length - filled_length)
+            sys.stderr.write(f'\r[{bar}] {percent_complete:.0f}% ({current}/{self.total}) {current-previous} w/s          ')
+            sys.stderr.flush()
+
+        def update(self, current):
+            self.current = current
+
+        def stop(self):
+            self.running = False
+            self.thread.join()
+            sys.stderr.write('\n')  # Move to the next line after finishing
+
+        def finish(self):
+            self.current = self.total
+            self.display(self.current, self.current)  # Display the full progress bar
+            self.stop()                               # Stop the thread
+#
+# get input
+#
+
+words = set()
+def addword(word):
+    # don't add dupes to list
+    if word not in words:
+        words.add(word)
+
+# add word variations to list
+def wordvari(word):
+    addword(word)
+    if args.lower: addword(word.lower())
+    if args.upper: addword(word.upper())
+    if args.title: addword(word.title())
+    if args.reverse: addword(word[::-1].lower())
+    #addword(word[::-1].upper())
+    #addword(word[::-1].title())
+
+if args.string is not None:
+    for i in args.string:
+        wordvari(i)
+
+if args.input is not None:
+    if args.verbose:
+        sys.stderr.write(f"loading file... ")
+        sys.stderr.flush()
+
+    with open(args.input, 'r') as file:
+        lines = [line.strip() for line in file.readlines()]
+        n = len(lines)
+        if args.verbose:
+            sys.stderr.write(f"loaded lines: {n}, variations -> ")
+            sys.stderr.flush()
+        for i in lines:
+            wordvari(i)
+
+    if args.verbose:
+        words_n = len(words)
+        sys.stderr.write(f"{words_n} ... done!\n")
+        sys.stderr.flush()
+
+
+#
+# define output
+#
+
+
+if args.output is not None:
+    out_file = open(args.output, "w")
+    def write(i):
+        out_file.write(f"{i}\n")
+else:
+    def write(i):
+        print(i)
+
+output_uniq = set()
+def out(i):
+
+    if len(i) < args.min:
+        return
+
+    if args.check:
+        if i in output_uniq:
+            return
+        output_uniq.add(i)
+
+    write(i)
+
+#
+# generation
+#
+
+# num variations
+def print_wi(word,  i): out(word + i)
+def print_iw(word,  i): out(i + word)
+def print_iwi(word, i): out(i + word + i)
+
+def genlst(word, callback):
+    # common sufix
+    sufix = [
+        "!",
+        "!!",
+        "!!!",
+        ".",
+        "..",
+        "...",
+        "@",
+        "@@",
+        "@@@",
+        "#",
+        "12345",
+        "123456",
+        "1234567",
+        "12345678",
+        "123456789",
+        "1234567890",
+        "12345678910",
+        "012345",
+        "0123456",
+        "01234567",
+        "012345678",
+        "0123456789",
+        "01234567890",
+        "012345678910",
+    ]
+
+    for i in sufix:
+        callback(word, i)
+        r = i[::-1]
+        if r != i:
+            callback(word, r)
+    for i in range(0, 10):
+        callback(word, f"00{i}")
+
+    if args.year:
+        special = [
+            "31337",
+            "1337",
+            "1312",
+            "3112",
+            "403",
+        ]
+        for i in special:
+            callback(word, i)
+        for i in range(0, 101):
+            callback(word, str(i))
+        for i in range(0, 101):
+            callback(word, f"0{i}")
+        for i in range(1800, 2025): #2024
+            callback(word, str(i))
+    else:
+        for i in range(0, 10001): #10000
+            callback(word, str(i))
+        for i in range(0, 10001): #10000
+            callback(word, f"0{i}")
+
+
+def wordnum():
+    # just print word variations
+    for i in words:
+        out(i)
+
+    if args.verbose:
+        progress = Progress(current=1, total=words_n)
+
+    # word + nums
+    for x, i in enumerate(words):
+        if args.verbose: progress.update(x+1)
+        if args.wordint: genlst(i, print_wi)
+        if args.intword: genlst(i, print_iw)
+        if args.intwordint: genlst(i, print_iwi)
+
+    if args.verbose:
+        progress.finish()
+
+
+def namename():
+    for i in lines:
+        out(i + args.double_join + i)
+
+    if not args.double_small:
+        if args.verbose:
+            l = words_n * (words_n - 1)
+            progress = Progress(current=1, total=l)
+
+        for x, (str1, str2) in enumerate(itertools.permutations(words, 2)):
+            if args.verbose: progress.update(x+1)
+            out(str1 + args.double_join + str2)
+
+        if args.verbose:
+            progress.finish()
+
+if args.double:
+    namename()
+else:
+    wordnum()
+
+# close output if any
+if args.output is not None:
+    out_file.close()
+
+

@@ -1,0 +1,522 @@
+#!/usr/bin/env python
+
+import os
+import time
+import psutil
+import subprocess
+import sys
+import signal
+import atexit
+from colorama import Fore, Back, Style
+from threading import Thread, Lock
+from pathlib import Path
+from datetime import datetime
+
+import RPi.GPIO as GPIO
+
+#
+# globals
+#
+RST_PIN       = 25
+CS_PIN        = 8
+DC_PIN        = 24
+RST           = 27
+DC            = 25
+BL            = 24
+bus           = 0
+device        = 0
+KEY_UP_PIN    = 6
+KEY_DOWN_PIN  = 19
+KEY_LEFT_PIN  = 5
+KEY_RIGHT_PIN = 26
+KEY_PRESS_PIN = 13
+KEY1_PIN      = 21
+KEY2_PIN      = 20
+KEY3_PIN      = 16
+
+interface = "wlan1"
+dump_dir = "/home/pi/dump"
+os.chdir(dump_dir)
+hash_file = "preview.txt"
+
+
+# menus
+current_menu = 0
+
+
+# menu #1
+menu_items = [
+    [ 1, "info"],
+    [ 2, "start hcxdumptool"],
+    [ 3, "stop hcxdumptool"],
+    [ 4, "extract pcapng(s)"],
+    [ 5, "print names"],
+    [ 6, "reboot"],
+    [ 7, "poweroff"],
+]
+menu_opt = 1
+
+OPT_MIN = 1
+OPT_MAX = len(menu_items)
+
+# menu #2
+submenu_items = []
+submenu_items_li = 0
+submenu_selected = 0
+submenu_goback = 6
+submenu_goforw = 6
+submenu_skip = 10
+
+#
+# root
+#
+def checkRoot():
+    return os.geteuid() == 0
+
+if not checkRoot():
+    print("use root.")
+    exit()
+
+#
+# helper functions
+#
+def bytes_human_readable(num, suffix="B"):
+    original = num
+    for unit in ("", "Ki", "Mi", "Gi", "Ti", "Pi", "Ei", "Zi"):
+        if abs(num) < 1024.0:
+            return f"{num:3.1f} {unit}{suffix} ({original} bytes)"
+        num /= 1024.0
+    return f"{num:.1f} Yi{suffix} ({original}) bytes"
+
+
+def get_adapters():
+    addresses = psutil.net_if_addrs()
+    stats = psutil.net_if_stats()
+    ifs = []
+    for intface, addr_list in addresses.items():
+        ifs.append(intface)
+    return ifs
+
+def saferm(file_path):
+    try:
+        os.remove(file_path)
+        print(f"{file_path} has been deleted successfully")
+    except FileNotFoundError:
+        print(f"{file_path} does not exist")
+    except PermissionError:
+        print(f"Permission denied: {file_path}")
+    except Exception as e:
+        print(f"Error: {e}")
+
+def hex2str(string):
+    try:
+        hex_bytes = bytes.fromhex(string)
+        utf8_string = hex_bytes.decode('utf-8')
+        return utf8_string
+    except Exception as e: return "HEX ERROR"
+
+def isRunning():
+    return "hcxdumptool" in (p.name() for p in psutil.process_iter())
+
+def noAdapter():
+    ifs = get_adapters()
+    for i in ifs:
+        if i == interface:
+            return False
+    return True
+
+def start_detached_command(command, *args):
+    full_command = [command] + list(args)
+    with open(os.devnull, 'wb') as devnull:
+        subprocess.Popen(
+            full_command,
+            stdout=devnull,  # Redirect standard output to devnull
+            stderr=devnull,  # Redirect standard error to devnull
+            preexec_fn=os.setsid,
+            close_fds=True
+        )
+
+#
+# term draw controls
+#
+term_show_count = 0
+g_tc = os.get_terminal_size().columns
+g_tl = os.get_terminal_size().lines
+def term_show_count_reset():
+    global term_show_count
+    term_show_count = 0
+def term_clear():
+    os.system("clear")
+    term_show_count_reset()
+def term_cursor_reset():
+    print("\033[0;0H", end='')
+    term_show_count_reset()
+def term_cursor_hide():
+    print("\033[?25l")
+def term_cursor_show():
+    print("\033[?25h")
+def term_blank():
+    term_cursor_hide()
+    term_clear()
+def term_show_print(printStr, color = ""):
+    global term_show_count
+    tl = os.get_terminal_size().lines
+    if term_show_count >= (tl-1): return
+    print(f"{color}{printStr}{Style.RESET_ALL}")
+    term_show_count += 1
+def term_show(s, color = ""):
+    global g_tc
+    global g_tl
+    strings = s.split("\n")
+    tc = os.get_terminal_size().columns
+    tl = os.get_terminal_size().lines
+    if g_tc != tc or g_tl != tl:
+        g_tc = tc
+        g_tl = tl
+        term_clear()
+    for i in strings:
+        il = len(i)
+        if il > tc: term_show_print(i[:tc], color)
+        else:       term_show_print(i + str(" " * int(int(tc)-int(il))), color)
+
+@atexit.register
+def signal_handler():
+    term_cursor_show()
+
+
+
+#
+# actions
+#
+
+def action_start():
+    if isRunning():
+        print("can't start, already running")
+        return
+    if noAdapter():
+        print("can't start, no valid adapter")
+        return
+
+    bpf = os.path.join(os.path.dirname(os.path.realpath(__file__)), "hcx-menu-rpi-filter.bpf")
+    print(f"bpf: {bpf}")
+    print("starting...")
+    start_detached_command('sudo', 'hcxdumptool', '-i', interface, f"--bpf={bpf}")
+    print("started.")
+
+def action_stop():
+    print("$?:", subprocess.call(['sudo', 'pkill', '-INT', 'hcxdumptool']))
+
+def action_names():
+    term_clear()
+    submenu()
+
+def action_clear():
+    term_clear()
+    menu()
+
+def action_info():
+    term_clear()
+    print("devices:")
+    print(get_adapters())
+    count = 0
+    size = 0
+    for i in os.listdir(dump_dir):
+        file = os.path.join(dump_dir, i)
+        if os.path.isfile(file) and i.endswith(".pcapng"):
+            count += 1
+            size += Path(file).stat().st_size
+    print(f"files: {count}")
+    print(f"bytes: {bytes_human_readable(size)}")
+
+    isRunning = "hcxdumptool" in (p.name() for p in psutil.process_iter())
+    print(f"running: {isRunning}")
+
+def action_extract():
+    term_clear()
+    saferm(hash_file)
+    subprocess.run(f"hcxpcapngtool *.pcapng -o {hash_file}", shell=True)
+    subprocess.call(["hcxhashtool", "-i", hash_file])
+
+def action_reboot():
+    subprocess.call(["sudo", "reboot"])
+
+def action_poweroff():
+    subprocess.call(["sudo", "poweroff"])
+
+#
+# submenu
+#
+def submenu_draw():
+    global submenu_items
+    global submenu_items_li
+    global submenu_sorted
+    global submenu_goback
+    global submenu_goforw
+    global submenu_selected
+
+    term_cursor_reset()
+    back = submenu_selected - submenu_goback
+    forw = submenu_selected + submenu_goforw
+
+    if back < 0:
+        back = 0
+        forw = submenu_goback+submenu_goforw
+    if forw > submenu_items_li:
+        forw = submenu_items_li
+        back = forw - (submenu_goback+submenu_goforw)
+        if back <= 0: back = 0
+
+    term_show(f"{back+1},{submenu_selected+1},{forw+1} / {submenu_items_li+1}" , f"{Style.BRIGHT}{Fore.WHITE}")
+    if back >= 0:
+        for i in submenu_items[back:submenu_selected]:
+            term_show(f"  {i[0]}")
+    if submenu_items_li != -1:
+        term_show(f"> {submenu_items[submenu_selected][0]}" , f"{Style.BRIGHT}{Fore.WHITE}")
+    if forw <= submenu_items_li and submenu_selected+1 <= submenu_items_li:
+        for i in submenu_items[submenu_selected+1:forw+1]:
+            term_show(f"  {i[0]}")
+
+def submenu_up():
+    global submenu_selected
+    submenu_selected -= 1
+    if submenu_selected < 0: submenu_selected = 0
+    submenu_draw()
+
+def submenu_down():
+    global submenu_selected
+    global submenu_items_li
+    submenu_selected += 1
+    if submenu_selected > submenu_items_li: submenu_selected = submenu_items_li
+    submenu_draw()
+
+def submenu_press():
+    global submenu_items
+    global submenu_selected
+    global submenu_items_li
+    if submenu_items_li != -1:
+        term_clear()
+        print("\n".join(submenu_items[submenu_selected]))
+
+def submenu_left():
+    global submenu_selected
+    submenu_selected = 0
+    submenu_draw()
+
+def submenu_right():
+    global submenu_selected
+    global submenu_items_li
+    submenu_selected = submenu_items_li
+    submenu_draw()
+
+def submenu_key1():
+    global current_menu
+    current_menu = 0
+
+def submenu_key2():
+    global submenu_skip
+    for i in range(submenu_skip): submenu_up()
+    submenu_draw()
+
+def submenu_key3():
+    global submenu_skip
+    for i in range(submenu_skip): submenu_down()
+    submenu_draw()
+
+def submenu_load():
+    global submenu_items
+    global submenu_items_li
+    global submenu_selected
+
+    with open(hash_file, 'r') as file1:
+        lines = [line.strip() for line in file1.readlines()]
+
+    essids = []
+    for line in lines:
+        if not line: continue
+        split = line.split("*")
+        t = split[1]
+        type_str = ""
+        if t == "01": type_str = "PMKID"
+        if t == "02": type_str = "EAPOL"
+        hashid = split[2]#.upper()
+        bssid  = split[3]#.upper()
+        mac    = split[4]#.upper()
+        essid  = hex2str(split[5])
+
+        essids.append([essid, bssid, mac, hashid])
+
+    submenu_items = essids
+    submenu_items_li = len(essids) - 1
+    submenu_selected = submenu_items_li
+
+def submenu():
+    term_clear()
+    submenu_load()
+    submenu_draw()
+    global current_menu
+    current_menu = 1
+
+#
+# drawing UI
+#
+def menu(red=False):
+
+    term_cursor_reset()
+
+    global menu_opt
+    global menu_items
+
+    # draw
+    term_show(f"{str(datetime.now())}"       , f"{Style.BRIGHT}{Fore.GREEN}")
+
+    for i in menu_items:
+        num = str(i[0]).rjust(3, " ")
+        cmd = i[1]
+        back = f"{Back.WHITE}"
+        if red:
+            back = f"{Back.RED}"
+        if menu_opt == i[0]: term_show(f">{num}. {cmd}" , f"{Style.NORMAL}{back}{Fore.BLACK}")
+        else:                term_show(f" {num}. {cmd}")
+
+def menu_up():
+    global menu_opt
+    global OPT_MIN
+    menu_opt -= 1
+    if menu_opt < OPT_MIN: menu_opt = OPT_MIN
+    menu()
+
+def menu_down():
+    global menu_opt
+    global OPT_MAX
+    menu_opt += 1
+    if menu_opt > OPT_MAX: menu_opt = OPT_MAX
+    menu()
+
+def menu_draw():
+    term_clear()
+    menu()
+
+def menu_left():
+    menu_draw()
+
+def menu_right():
+    menu_draw()
+
+def menu_press():
+    menu(True)
+    global menu_opt
+    if   menu_opt ==  1: action_info()
+    elif menu_opt ==  2: action_start()
+    elif menu_opt ==  3: action_stop()
+    elif menu_opt ==  4: action_extract()
+    elif menu_opt ==  5: action_names()
+    elif menu_opt ==  6: action_reboot()
+    elif menu_opt ==  7: action_poweroff()
+
+def menu_key1():
+    global menu_opt
+    menu_opt = 1
+    menu_press()
+
+def menu_key2():
+    global menu_opt
+    menu_opt = 2
+    menu_press()
+
+def menu_key3():
+    global menu_opt
+    menu_opt = 3
+    menu_press()
+
+#
+# handling input
+#
+
+def callback_up(channel):
+    global current_menu
+    if current_menu == 0:
+        menu_up()
+    elif current_menu == 1:
+        submenu_up()
+
+def callback_down(channel):
+    global current_menu
+    if current_menu == 0:
+        menu_down()
+    elif current_menu == 1:
+        submenu_down()
+
+def callback_left(channel):
+    global current_menu
+    if current_menu == 0:
+        menu_left()
+    elif current_menu == 1:
+        submenu_left()
+
+def callback_right(channel):
+    global current_menu
+    if current_menu == 0:
+        menu_right()
+    elif current_menu == 1:
+        submenu_right()
+
+def callback_press(channel):
+    global current_menu
+    if current_menu == 0:
+        menu_press()
+    elif current_menu == 1:
+        submenu_press()
+
+def callback_key1(channel):
+    global current_menu
+    if current_menu == 0:
+        menu_key1()
+    elif current_menu == 1:
+        submenu_key1()
+
+def callback_key2(channel):
+    global current_menu
+    if current_menu == 0:
+        menu_key2()
+    elif current_menu == 1:
+        submenu_key2()
+
+def callback_key3(channel):
+    global current_menu
+    if current_menu == 0:
+        menu_key3()
+    elif current_menu == 1:
+        submenu_key3()
+
+try:
+    # setup board
+    GPIO.setmode(GPIO.BCM)
+    GPIO.setup(KEY1_PIN, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+    GPIO.setup(KEY2_PIN, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+    GPIO.setup(KEY3_PIN, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+    GPIO.setup(KEY_UP_PIN, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+    GPIO.setup(KEY_LEFT_PIN, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+    GPIO.setup(KEY_RIGHT_PIN, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+    GPIO.setup(KEY_DOWN_PIN, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+    GPIO.setup(KEY_PRESS_PIN, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+
+    bt = 100
+    GPIO.add_event_detect(KEY_UP_PIN, GPIO.RISING, callback=callback_up, bouncetime=bt)
+    GPIO.add_event_detect(KEY_DOWN_PIN, GPIO.RISING, callback=callback_down, bouncetime=bt)
+    GPIO.add_event_detect(KEY_PRESS_PIN, GPIO.RISING, callback=callback_press, bouncetime=bt)
+    GPIO.add_event_detect(KEY_LEFT_PIN, GPIO.RISING, callback=callback_left, bouncetime=bt)
+    GPIO.add_event_detect(KEY_RIGHT_PIN, GPIO.RISING, callback=callback_right, bouncetime=bt)
+    GPIO.add_event_detect(KEY1_PIN, GPIO.RISING, callback=callback_key1, bouncetime=bt)
+    GPIO.add_event_detect(KEY2_PIN, GPIO.RISING, callback=callback_key2, bouncetime=bt)
+    GPIO.add_event_detect(KEY3_PIN, GPIO.RISING, callback=callback_key3, bouncetime=bt)
+except:
+    print("can't get board")
+    exit()
+
+term_clear()
+menu()
+
+try:
+    input()
+except KeyboardInterrupt:
+    GPIO.cleanup()

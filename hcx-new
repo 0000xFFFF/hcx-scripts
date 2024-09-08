@@ -1,0 +1,2 @@
+#!/bin/bash
+hcx-rmhashes "$1" /media/SSD/root/dump/cap/all/all.txt

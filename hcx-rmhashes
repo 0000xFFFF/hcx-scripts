@@ -1,0 +1,41 @@
+#!/usr/bin/env python3
+
+import sys
+
+if len(sys.argv) < 3:
+    print("ABOUT: remove hashes from another file by matching it's bssid+essid")
+    print("USAGE: " + sys.argv[0] + " <hashesFile> <hashesToRemoveFile>")
+    exit()
+
+with open(sys.argv[1], 'r') as file1:
+    lines1 = [line.strip() for line in file1 if line.strip()]
+
+with open(sys.argv[2], 'r') as file2:
+    lines2 = [line.strip() for line in file2 if line.strip()]
+
+def hex2str(hex_string):
+    try: return bytes.fromhex(hex_string).decode('utf-8')
+    except ValueError: return "HEX ERROR"
+
+def line2info(line):
+    split = line.split("*")
+    hash_id = split[2]
+    hash_id, bssid, mac, essid = split[2], split[3], split[4], hex2str(split[5])
+    return hash_id, bssid, mac, essid
+
+keys_to_remove = set()
+for line in lines2:
+    if not line: continue
+    hash_id, bssid, mac, essid = line2info(line)
+    key = f"{essid}{bssid}{essid}{bssid}"
+    keys_to_remove.add(key)
+
+hashes_dict = {}
+for line in lines1:
+    if not line: continue
+    hash_id, bssid, mac, essid = line2info(line)
+    key = f"{essid}{bssid}{essid}{bssid}"
+    if key not in keys_to_remove:
+        hashes_dict[bssid] = line
+        print(line)
+

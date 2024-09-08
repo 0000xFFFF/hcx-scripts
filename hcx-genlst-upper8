@@ -1,0 +1,17 @@
+#!/usr/bin/env python3
+
+import itertools
+import string
+
+# Get all uppercase ASCII characters
+ascii_uppercase = string.ascii_uppercase
+
+# Length of the permutations
+length = 8
+
+# Generate all permutations of the given length
+permutations = itertools.permutations(ascii_uppercase, length)
+
+# Print the permutations
+for p in permutations:
+    print(''.join(p))
