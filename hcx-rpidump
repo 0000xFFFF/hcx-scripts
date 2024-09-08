@@ -47,10 +47,10 @@ def run():
         print("can't start, no valid adapter")
         return
 
-    print(f"bpf: {bpf}")
     print("starting...")
     arg_list = ['sudo', 'hcxdumptool', '-i', interface]
     if useBPF:
+        print(f"using bpf: {bpf}")
         arg_list += [f"--bpf={bpf}"]
 
     process = subprocess.Popen(arg_list, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
