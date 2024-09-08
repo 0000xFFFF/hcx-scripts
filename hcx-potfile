@@ -1,11 +1,5 @@
 #!/usr/bin/env python3
 
-# hcx-potfile "/path/for/the/potfile (optional)"   - the script will find the potfile by itself
-# hcx-potfile PASS                                 - only print passwords from potfile
-# hcx-potfile SORT0                                - sort by clm index (0 = num, 1 = hashid, 2 = essid, 3 = psk)
-# hcx-potfile NOCOLOR                              - don't print color (made for dumping files)
-#
-
 import sys
 import os
 import subprocess
