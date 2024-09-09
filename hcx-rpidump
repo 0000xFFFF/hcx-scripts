@@ -48,7 +48,7 @@ def run():
         return
 
     print("starting...")
-    arg_list = ['sudo', 'hcxdumptool', '-i', interface]
+    arg_list = ['sudo', 'hcxdumptool', '--errormax=10', '-i', interface]
     if useBPF:
         print(f"using bpf: {bpf}")
         arg_list += [f"--bpf={bpf}"]
