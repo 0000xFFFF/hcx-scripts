@@ -98,4 +98,7 @@ hcx-new   - get newly captured hashes that are not in main hashes db
 hcx-fetch - grep hcx-info for main hashes db
 ```
 
-
+# Disclaimer:
+The hcx-scripts are intended for educational purposes only.
+The author is not responsible or liable for any misuse, illegal activity, or damage caused by the use of these scripts.
+Users are solely responsible for ensuring compliance with applicable laws and regulations.
