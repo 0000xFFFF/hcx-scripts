@@ -51,7 +51,7 @@ hcx-rpidump       - small script that starts hcxdumptool when wlan1
 hcx-rpidump-wmenu - rasberry pi waveshare menu for starting hcxdumptool
 ```
 
-## Generate password wordlists for cracking:
+## Generate password wordlists for cracking
 ```
 hcx-genlst           - name + numer, number + name, number + name + number
 hcx-genlst-num8      - numbers from 00000000 to 99999999
