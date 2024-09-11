@@ -4,19 +4,21 @@
 
 Useful python scripts for cracking/processing WPA-PBKDF2-PMKID+EAPOL hashes and passwords.
 
-## Requirements
+## Installation
+
+### Requirements
 * python
 * hashcat
 * hcxtools
 * hcxdumptool
 
-## Requirements - pip
+### Requirements - pip
 * colorama
 * tabulate
 * scapy
 * getkey
 
-# Processing hashes
+## Processing hashes
 ```
 hcx-info hashes.txt    - display a nice table for hashes in file
                          (MACs, BSSIDs, ESSIDs, passwords, vendor info, ...)
@@ -42,14 +44,14 @@ hcx-potfile            - display a nice table for all hashcat passwords in potfi
 ./run.sh                        # runs hashcat with generated wordlists
 ```
 
-# Capturing hashes with raspberry pi and hcxdumptool
+## Capturing hashes with raspberry pi and hcxdumptool
 ```
 hcx-rpidump       - small script that starts hcxdumptool when wlan1
                     device is connected to raspberry pi
 hcx-rpidump-wmenu - rasberry pi waveshare menu for starting hcxdumptool
 ```
 
-# Generate password wordlists for cracking:
+## Generate password wordlists for cracking:
 ```
 hcx-genlst           - name + numer, number + name, number + name + number
 hcx-genlst-num8      - numbers from 00000000 to 99999999
@@ -70,7 +72,7 @@ hcx-genlst -lut123 -s steve
 # ..... use -h to show other options...
 ```
 
-# Reacon after cracking
+## Reacon after cracking
 ```
 hcx-wifi            - airodump-ng clone written in python that shows you passwords of
                       nearby networks you have cracked with hashcat
@@ -91,14 +93,14 @@ BSSID              ESSID             PASSWORD      PWR  LAST SEEN              #
 90:9A:4A:97:77:66  Super Fast AP     ...           -63  2024-09-07 22:46:13   20     4  {'WPA2/PSK', 'WPA/PSK'}  6445573529984          2
 ```
 
-# Misc scripts that should be manually modified
+## Misc scripts that should be manually modified
 ```
 hcx-cap   - extract info from newly captured cap/pcapng files
 hcx-new   - get newly captured hashes that are not in main hashes db
 hcx-fetch - grep hcx-info for main hashes db
 ```
 
-# Disclaimer:
+## Disclaimer
 The hcx-scripts are intended for educational purposes only.
 The author is not responsible or liable for any misuse, illegal activity, or damage caused by the use of these scripts.
 Users are solely responsible for ensuring compliance with applicable laws and regulations.
