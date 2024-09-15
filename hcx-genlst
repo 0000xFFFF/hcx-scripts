@@ -187,6 +187,8 @@ def genlst(word, callback):
 
     if args.year:
         special = [
+            "123",
+            "1234",
             "31337",
             "1337",
             "1312",
@@ -195,6 +197,9 @@ def genlst(word, callback):
         ]
         for i in special:
             callback(word, i)
+            r = i[::-1]
+            if r != i:
+                callback(word, r)
         for i in range(0, 101):
             callback(word, str(i))
         for i in range(0, 101):
