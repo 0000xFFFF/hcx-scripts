@@ -59,7 +59,12 @@ if args.verbose:
             else:
                 words_per_sec = (current - self.prev_processed) / time_delta
 
-            percent_complete = (current / self.total) * 100
+            # Prevent division by zero
+            if self.total > 0:
+                percent_complete = (current / self.total) * 100
+            else:
+                percent_complete = 100  # Set to 100% if total is 0
+
             filled_length = int(self.length * percent_complete // 100)
             bar = '#' * filled_length + '-' * (self.length - filled_length)
             sys.stderr.write(f'\r[{bar}] {percent_complete:.0f}% ({current}/{self.total}) {words_per_sec:.1f} w/s          ')
@@ -86,22 +91,22 @@ if args.verbose:
 #
 
 words = set()
-def add_word(word):
+def addword(word):
     words.add(word)
 
 # add word variations to list
-def word_variations(word):
-    add_word(word)
-    if args.lower: add_word(word.lower())
-    if args.upper: add_word(word.upper())
-    if args.title: add_word(word.title())
-    if args.reverse: add_word(word[::-1].lower())
+def wordvari(word):
+    addword(word)
+    if args.lower: addword(word.lower())
+    if args.upper: addword(word.upper())
+    if args.title: addword(word.title())
+    if args.reverse: addword(word[::-1].lower())
     #addword(word[::-1].upper())
     #addword(word[::-1].title())
 
 if args.string:
     for i in args.string:
-        word_variations(i)
+        wordvari(i)
 
 if args.input:
     if args.verbose:
@@ -110,27 +115,28 @@ if args.input:
 
     with open(args.input, 'r') as file:
         for line in file:
-            word_variations(line.strip())
+            wordvari(line.strip())
+
 
 words_n = len(words)
 if args.verbose:
     sys.stderr.write(f"word set length: {words_n}\n")
     sys.stderr.flush()
 
-
 #
 # define output
 #
+
 if args.output:
-    output_file = open(args.output, "w")
-    def write_output(line):
-        output_file.write(f"{line}\n")
+    out_file = open(args.output, "w")
+    def write(i):
+        out_file.write(f"{i}\n")
 else:
-    def write_output(i):
+    def write(i):
         print(i)
 
 output_uniq = set()
-def output_unique(i):
+def out_minlen_uniq(i):
 
     if len(i) < args.min:
         return
@@ -140,86 +146,114 @@ def output_unique(i):
             return
         output_uniq.add(i)
 
-    write_output(i)
+    write(i)
 
 #
 # generation
 #
-
-def append_num_variations(word, callback):
-    suffixes = [
-        "!", "!!", "!!!", ".", "..", "...", "@", "@@", "@@@", "#", "12345", "123456",
-        "1234567", "12345678", "123456789", "1234567890", "12345678910", "012345",
-        "0123456", "01234567", "012345678", "0123456789", "01234567890", "012345678910"
+def genlst(word, callback):
+    # common sufix
+    sufix = [
+        "!",
+        "!!",
+        "!!!",
+        ".",
+        "..",
+        "...",
+        "@",
+        "@@",
+        "@@@",
+        "#",
+        "12345",
+        "123456",
+        "1234567",
+        "12345678",
+        "123456789",
+        "1234567890",
+        "12345678910",
+        "012345",
+        "0123456",
+        "01234567",
+        "012345678",
+        "0123456789",
+        "01234567890",
+        "012345678910",
     ]
-    for suffix in suffixes:
-        callback(word, suffix)
-        reversed_suffix = suffix[::-1]
-        if reversed_suffix != suffix:
-            callback(word, reversed_suffix)
-    for i in range(10):
+
+    for i in sufix:
+        callback(word, i)
+        r = i[::-1]
+        if r != i:
+            callback(word, r)
+    for i in range(0, 10):
         callback(word, f"00{i}")
 
     if args.year:
-        special_years = ["123", "1234", "31337", "1337", "1312", "3112", "403"]
-        for special in special_years:
-            callback(word, special)
-            reversed_special = special[::-1]
-            if reversed_special != special:
-                callback(word, reversed_special)
-        for year in range(0, 101):
-            callback(word, str(year))
-            callback(word, f"0{year}")
-        for year in range(1800, 2025):
-            callback(word, str(year))
+        special = [
+            "123",
+            "1234",
+            "31337",
+            "1337",
+            "1312",
+            "3112",
+            "403",
+        ]
+        for i in special:
+            callback(word, i)
+            r = i[::-1]
+            if r != i:
+                callback(word, r)
+        for i in range(0, 101):
+            callback(word, str(i))
+            callback(word, f"0{i}")
+        for i in range(1800, 2025): #2024
+            callback(word, str(i))
     else:
-        for num in range(10001):
-            callback(word, str(num))
-            callback(word, f"0{num}")
+        for i in range(0, 10001): #10000
+            callback(word, str(i))
+            callback(word, f"0{i}")
 
 
-def generate_word_variations():
-    for word in words:
-        output_unique(word)
+def wordnum():
+    # just print word variations
+    for i in words:
+        out_minlen_uniq(i)
+
     if args.verbose:
-        progress = Progress(current=1, total=len(words))
+        progress = Progress(current=1, total=words_n)
 
-    for idx, word in enumerate(words):
-        if args.verbose:
-            progress.update(idx + 1)
-        if args.wordint:
-            append_num_variations(word, lambda w, n: output_unique(w + n))
-        if args.intword:
-            append_num_variations(word, lambda n, w: output_unique(n + w))
-        if args.intwordint:
-            append_num_variations(word, lambda n, w: output_unique(n + w + n))
+    # word + nums
+    for x, i in enumerate(words):
+        if args.verbose: progress.update(x+1)
+        if args.wordint: genlst(i, lambda w, n: out_minlen_uniq(w + n))
+        if args.intword: genlst(i, lambda w, n: out_minlen_uniq(n + w))
+        if args.intwordint: genlst(i, lambda w, n: out_minlen_uniq(n + w + n))
 
     if args.verbose:
         progress.finish()
 
-def generate_double_mode():
-    for word in words:
-        output_unique(word + args.double_join + word)
+
+def namename():
+    for i in lines:
+        out_minlen_uniq(i + args.double_join + i)
 
     if not args.double_small:
         if args.verbose:
-            total_permutations = words_n * (words_n - 1)
-            progress = Progress(current=1, total=total_permutations)
+            l = words_n * (words_n - 1)
+            progress = Progress(current=1, total=l)
 
-        for idx, (word1, word2) in enumerate(itertools.permutations(words, 2)):
-            if args.verbose:
-                progress.update(idx + 1)
-            output_unique(word1 + args.double_join + word2)
+        for x, (str1, str2) in enumerate(itertools.permutations(words, 2)):
+            if args.verbose: progress.update(x+1)
+            out_minlen_uniq(str1 + args.double_join + str2)
 
         if args.verbose:
             progress.finish()
 
 if args.double:
-    generate_double_mode()
+    namename()
 else:
-    generate_word_variations()
+    wordnum()
 
-# Close output file if necessary
+# close output if any
 if args.output:
-    output_file.close()
-
+    out_file.close()
