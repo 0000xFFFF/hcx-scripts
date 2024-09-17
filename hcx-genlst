@@ -6,7 +6,7 @@ import itertools
 import time
 from threading import Thread
 
-parser = argparse.ArgumentParser(description='generate password wordlist from strings (words)')
+parser = argparse.ArgumentParser(description='generate a password wordlist from strings (words)')
 
 parser.add_argument('-s', '--string', metavar='word', action="append", type=str, help="append word to word set for generation (can have multiple -s)")
 parser.add_argument('-i', '--input', metavar='infile', type=str, help="append every line in file to word set")
@@ -36,26 +36,37 @@ if args.verbose:
             self.current = current
             self.total = total
             self.length = length
-            self.running = True  # Control flag for the thread
+            self.running = True
+            self.start_time = time.time()
+            self.prev_time = self.start_time
+            self.prev_processed = 0
 
             # Start the thread to display the progress
             self.thread = Thread(target=self.run)
             self.thread.start()
 
         def run(self):
-            p = 0
             while self.running:
-                a = self.current
-                self.display(a, p)
-                p = a
-                time.sleep(1)  # Update every second
+                self.display(self.current)
+                time.sleep(0.05)
 
-        def display(self, current, previous=0):
+        def display(self, current):
+            elapsed_time = time.time() - self.start_time
+            time_delta = time.time() - self.prev_time
+
+            if elapsed_time == 0:
+                words_per_sec = 0
+            else:
+                words_per_sec = (current - self.prev_processed) / time_delta
+
             percent_complete = (current / self.total) * 100
             filled_length = int(self.length * percent_complete // 100)
             bar = '#' * filled_length + '-' * (self.length - filled_length)
-            sys.stderr.write(f'\r[{bar}] {percent_complete:.0f}% ({current}/{self.total}) {current-previous} w/s          ')
+            sys.stderr.write(f'\r[{bar}] {percent_complete:.0f}% ({current}/{self.total}) {words_per_sec:.1f} w/s          ')
             sys.stderr.flush()
+
+            self.prev_time = time.time()  # Update the time for the next calculation
+            self.prev_processed = current  # Track the last processed word count
 
         def update(self, current):
             self.current = current
@@ -63,54 +74,48 @@ if args.verbose:
         def stop(self):
             self.running = False
             self.thread.join()
-            sys.stderr.write('\n')  # Move to the next line after finishing
+            sys.stderr.write('\n')
 
         def finish(self):
             self.current = self.total
-            self.display(self.current, self.current)  # Display the full progress bar
-            self.stop()                               # Stop the thread
+            self.display(self.current)
+            self.stop()
+
 #
 # get input
 #
 
 words = set()
-def addword(word):
-    # don't add dupes to list
-    if word not in words:
-        words.add(word)
+def add_word(word):
+    words.add(word)
 
 # add word variations to list
-def wordvari(word):
-    addword(word)
-    if args.lower: addword(word.lower())
-    if args.upper: addword(word.upper())
-    if args.title: addword(word.title())
-    if args.reverse: addword(word[::-1].lower())
+def word_variations(word):
+    add_word(word)
+    if args.lower: add_word(word.lower())
+    if args.upper: add_word(word.upper())
+    if args.title: add_word(word.title())
+    if args.reverse: add_word(word[::-1].lower())
     #addword(word[::-1].upper())
     #addword(word[::-1].title())
 
-if args.string is not None:
+if args.string:
     for i in args.string:
-        wordvari(i)
+        word_variations(i)
 
-if args.input is not None:
+if args.input:
     if args.verbose:
         sys.stderr.write(f"loading file... ")
         sys.stderr.flush()
 
     with open(args.input, 'r') as file:
-        lines = [line.strip() for line in file.readlines()]
-        n = len(lines)
-        if args.verbose:
-            sys.stderr.write(f"loaded lines: {n}, variations -> ")
-            sys.stderr.flush()
-        for i in lines:
-            wordvari(i)
+        for line in file:
+            word_variations(line.strip())
 
-    if args.verbose:
-        words_n = len(words)
-        sys.stderr.write(f"{words_n} ... done!\n")
-        sys.stderr.flush()
+words_n = len(words)
+if args.verbose:
+    sys.stderr.write(f"word set length: {words_n}\n")
+    sys.stderr.flush()
 
 
 #
