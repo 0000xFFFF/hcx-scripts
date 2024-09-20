@@ -186,7 +186,7 @@ with open(file_gen, 'w') as f_gen:
                 f1.write(f"{item[0]}\n")
 
         if dogen:
-            command = f"hcx-genlst -lut123 {item[6]} -o \"{file_2}\" # {item[5]}\n"
+            command = f"hcx-fastgenlst -lut123 {item[6]} -o \"{file_2}\" # {item[5]}\n"
             f_gen.write(command)
             print(f"| {command}", end="")
             files.append([file_1, file_2, item])

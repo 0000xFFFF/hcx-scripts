@@ -11,6 +11,7 @@ Useful python scripts for cracking/processing WPA-PBKDF2-PMKID+EAPOL hashes and 
 * hashcat
 * hcxtools
 * hcxdumptool
+* [hcx-fastgenlst](https://github.com/0000xFFFF/hcx-fastgenlst)
 
 ### Requirements - pip
 * colorama
