@@ -18,6 +18,12 @@ Useful python scripts for cracking/processing WPA-PBKDF2-PMKID+EAPOL hashes and 
 * scapy
 * getkey
 
+### Run before usage
+```
+./install.sh
+```
+This will just `ln -sfr <scripts> /usr/local/bin/.`, some scripts depend on each other...
+
 ## Processing hashes
 ```
 hcx-info hashes.txt    - display a nice table for hashes in file
