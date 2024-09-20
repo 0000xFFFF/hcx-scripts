@@ -52,6 +52,8 @@ hcx-rpidump-wmenu - rasberry pi waveshare menu for starting hcxdumptool
 ```
 
 ## Generate password wordlists for cracking
+Use newer version: [hcx-fastgenlst](https://github.com/0000xFFFF/hcx-fastgenlst)
+
 ```
 hcx-genlst           - name + numer, number + name, number + name + number
 hcx-genlst-num8      - numbers from 00000000 to 99999999
