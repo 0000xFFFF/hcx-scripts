@@ -8,9 +8,9 @@ Useful python scripts for cracking/processing WPA-PBKDF2-PMKID+EAPOL hashes and 
 
 ### Requirements
 * python
-* hashcat
-* hcxtools
-* hcxdumptool
+* [hashcat](https://github.com/hashcat/hashcat)
+* [hcxtools](https://github.com/ZerBea/hcxtools)
+* [hcxdumptool](https://github.com/ZerBea/hcxdumptool)
 * [hcx-fastgenlst](https://github.com/0000xFFFF/hcx-fastgenlst)
 
 ### Requirements - pip
@@ -31,20 +31,20 @@ hcx-info hashes.txt    - display a nice table for hashes in file
                          (MACs, BSSIDs, ESSIDs, passwords, vendor info, ...)
                          fetches passwords from hashcat if any cracked hashes detected,
                          display vendor info with -v for all macs...
-hcx-cracker hashes.txt - crack wifi passwords by their essids
+hcx-cracker hashes.txt - crack wifi passwords by using their essids
 hcx-potfile            - display a nice table for all hashcat passwords in potfile
 ```
 
 #### Examples:
-###### ./hcx-info hashes.txt
+> ./hcx-info hashes.txt
 ```
-    #  TYPE    HASH                              MAC AP        MAC CLIENT    ESSID                            PASSWORD               VENDOR AP    VENDOR CLIENT
------  ------  --------------------------------  ------------  ------------  -------------------------------  ---------------------  -----------  ---------------
-    1  EAPOL   4hj32jkh5jk34h5klj324hk5jh4kjkh5  efefefefefef  dededededeed  testwifi                         test1234
-    2  PMKID   9214h2314kjh132kj4h321h4lkj23hhj  edededdedede  fefefefefefe  anothertestwifi                  testing123
+#  TYPE    HASH                              MAC AP        MAC CLIENT    ESSID             PASSWORD   
+-  ------  --------------------------------  ------------  ------------  ----------------  -----------
+1  EAPOL   4hj32jkh5jk34h5klj324hk5jh4kjkh5  efefefefefef  dededededeed  testwifi          test1234
+2  PMKID   9214h2314kjh132kj4h321h4lkj23hhj  edededdedede  fefefefefefe  anothertestwifi   testing123
 ```
 
-##### crack wifi passwords by essids
+##### crack wifi passwords by using their essids
 ```
 ./hcx-cracker hashes.txt -ab    # generates gen and run scripts
 ./gen.sh                        # generates wordlists by network ESSID for each network
@@ -59,7 +59,7 @@ hcx-rpidump-wmenu - rasberry pi waveshare menu for starting hcxdumptool
 ```
 
 ## Generate password wordlists for cracking
-Use newer version: [hcx-fastgenlst](https://github.com/0000xFFFF/hcx-fastgenlst)
+Use the newer version: [hcx-fastgenlst](https://github.com/0000xFFFF/hcx-fastgenlst)
 
 ```
 hcx-genlst           - name + numer, number + name, number + name + number
@@ -89,17 +89,19 @@ hcx-wifi-genpasslst - generate password csv list for hcx-wifi
 ```
 
 #### Examples:
-##### ./hcx-wifi-genpasslst hashes.txt > passlst.csv
-##### ./hcx-wifi wlan1mon passlst.csv
+```
+./hcx-wifi-genpasslst hashes.txt > passlst.csv
+./hcx-wifi wlan1mon passlst.csv
+```
 ```
 CH  4 | 2024-09-07 22:46:13.812907 | COUNT: 21 | PASS: 10 (3) | SORT BY: ↓ PWR
 > RESUMED CHANNEL HOPPER
 
-BSSID              ESSID             PASSWORD      PWR  LAST SEEN              #    CH  CRYPTO                       TIMESTAMP    PACKETS
------------------  ----------------  ----------  -----  -------------------  ---  ----  -----------------------  -------------  ---------
-48:8E:EF:E6:55:22  My Home Network   password1     -37  2024-09-07 22:46:13    6     1  {'WPA2/PSK'}              211487642022          3
-96:9A:4A:7E:7E:7E  Network Test 1    123456789     -51  2024-09-07 22:46:13   18     4  {'WPA2/PSK'}             6445574041984          5
-90:9A:4A:97:77:66  Super Fast AP     ...           -63  2024-09-07 22:46:13   20     4  {'WPA2/PSK', 'WPA/PSK'}  6445573529984          2
+BSSID              ESSID             PASSWORD      PWR  LAST SEEN              #    CH
+-----------------  ----------------  ----------  -----  -------------------  ---  ----
+48:8E:EF:E6:55:22  My Home Network   password1     -37  2024-09-07 22:46:13    6     1   ...
+96:9A:4A:7E:7E:7E  Network Test 1    123456789     -51  2024-09-07 22:46:13   18     4   ...
+90:9A:4A:97:77:66  Super Fast AP     ...           -63  2024-09-07 22:46:13   20     4   ...
 ```
 
 ## Misc scripts that should be manually modified
