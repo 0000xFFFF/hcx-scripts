@@ -38,10 +38,10 @@ hcx-potfile            - display a nice table for all hashcat passwords in potfi
 #### Examples:
 > ./hcx-info hashes.txt
 ```
-#  TYPE    HASH                              MAC AP        MAC CLIENT    ESSID             PASSWORD   
--  ------  --------------------------------  ------------  ------------  ----------------  -----------
-1  EAPOL   4hj32jkh5jk34h5klj324hk5jh4kjkh5  efefefefefef  dededededeed  testwifi          test1234
-2  PMKID   9214h2314kjh132kj4h321h4lkj23hhj  edededdedede  fefefefefefe  anothertestwifi   testing123
+#  TYPE   HASH             MAC AP        MAC CLIENT    ESSID             PASSWORD   
+-  -----  ------...------  ------------  ------------  ----------------  -----------
+1  EAPOL  195bf3...fb1ec7  4c72b90f32c6  f04f7cb94dfd  MyFast-Wifi       test1234
+2  PMKID  d74192...6c0580  78f29ef71570  b8e4dfd8c840  Galaxy Internet   testing123
 ```
 
 ##### crack wifi passwords by using their essids
