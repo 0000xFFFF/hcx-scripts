@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# ABOUT: extract all info from *.cap *.pcapng files with hcxdumptool
+# ABOUT: extract all info from *.cap *.pcapng files with hcxpcapngtool
 
 echo "-- hcxpcapngtool"
 hcxpcapngtool *.pcapng *.cap -E essid.txt -R probeonly.txt -I identity.txt -U username.txt -D deviceinfo.txt -o all.txt >/dev/null 2>/dev/null
